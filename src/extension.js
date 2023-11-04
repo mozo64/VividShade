@@ -171,7 +171,7 @@ const DimmerMenuButton = GObject.registerClass(
                 if (typeof slider._moveHandle === 'function') {
                     slider._moveHandle(value);
                 } else {
-                    log(`Expected a Slider with setValue(), but did not find one: ${slider}`);
+                    log(`Expected a Slider with _moveHandle(), but did not find one: ${slider}`);
 
                     // Log all methods and properties of the slider object
                     let proto = Object.getPrototypeOf(slider);
