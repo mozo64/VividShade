@@ -1,0 +1,11 @@
+{
+  "_generated": "With assist of ChatGPT", 
+  "description": "Multimonitor dimming overlay with RGB regulation: extension adds a button with a light bulb icon to your panel. Clicking this button reveals individual sliders for each connected monitor, allowing you to adjust the dimming level. Additionally, you can toggle the color of the dimming effect and customize it using RGB sliders located at the bottom of the menu. \n\nTested with Ubuntu 22.04.3 LTS and GNOME Shell 42.9. \n\nIt is a fork of Dim Desktop 70.", 
+  "name": "VividShade: Multi-Monitor RGB Dimming Control", 
+  "shell-version": [
+    "42"
+  ], 
+  "url": "https://github.com/mozo64/VividShade", 
+  "uuid": "VividShade@mozo64.github.io", 
+  "version": 1
+}
