@@ -35,6 +35,8 @@ let colorValues = {
 
 let colorEnabled = {};
 let globalDimValue = 0.0;
+let dimmingEnabled = true;
+let monitorDimValues = {};
 
 function destroyOverlays() {
     Object.values(dimmerOverlays).forEach(overlay => {
@@ -78,6 +80,16 @@ class DimmerMenuButton extends PanelMenu.Button {
     }
 
     _createGlobalControls() {
+        const dimmingSwitchItem = new PopupMenu.PopupSwitchMenuItem(
+            _('Dimming'),
+            dimmingEnabled
+        );
+        dimmingSwitchItem.connect('toggled', (_item, state) => {
+            this._onDimmingToggled(state);
+        });
+        this.menu.addMenuItem(dimmingSwitchItem);
+        this._dimmingSwitchItem = dimmingSwitchItem;
+
         const globalSliderItem = new PopupMenu.PopupBaseMenuItem({
             activate: false,
         });
@@ -122,7 +134,10 @@ class DimmerMenuButton extends PanelMenu.Button {
             });
             sliderItem.add_child(monitorLabel);
 
-            const slider = new Slider(globalDimValue);
+            const monitorDimValue = monitorDimValues[index] ?? globalDimValue;
+            monitorDimValues[index] = monitorDimValue;
+
+            const slider = new Slider(monitorDimValue);
             slider.x_expand = true;
             slider.connect('notify::value', currentSlider => {
                 this._onSliderValueChanged(currentSlider.value, index);
@@ -153,13 +168,18 @@ class DimmerMenuButton extends PanelMenu.Button {
     _createColorSliders() {
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        ['red', 'green', 'blue'].forEach(color => {
+        [
+            ['red', 'R:'],
+            ['green', 'G:'],
+            ['blue', 'B:'],
+        ].forEach(([color, label]) => {
             const colorSliderItem = new PopupMenu.PopupBaseMenuItem({
                 activate: false,
             });
 
             const colorLabel = new St.Label({
-                text: `${color.toUpperCase()}:`,
+                text: label,
+                width: 28,
                 y_align: Clutter.ActorAlign.CENTER,
             });
             colorSliderItem.add_child(colorLabel);
@@ -173,6 +193,14 @@ class DimmerMenuButton extends PanelMenu.Button {
             colorSliderItem.add_child(colorSlider);
 
             this.menu.addMenuItem(colorSliderItem);
+        });
+    }
+
+    _onDimmingToggled(state) {
+        dimmingEnabled = state;
+
+        this._monitorSliders.forEach(({monitorIndex, slider}) => {
+            this._onSliderValueChanged(slider.value, monitorIndex);
         });
     }
 
@@ -197,9 +225,16 @@ class DimmerMenuButton extends PanelMenu.Button {
     }
 
     _onSliderValueChanged(value, monitorIndex) {
+        monitorDimValues[monitorIndex] = value;
+
         const monitor = Main.layoutManager.monitors[monitorIndex];
         if (!monitor)
             return;
+
+        if (!dimmingEnabled) {
+            dimmerOverlays[monitorIndex]?.set_opacity(0);
+            return;
+        }
 
         const opacity = Math.floor(value * 255);
 
@@ -282,10 +317,10 @@ class DimmerMenuButton extends PanelMenu.Button {
         this.menu.removeAll();
         this._buildMenu();
 
-        // Restore the current global dim level on the newly detected monitors.
-        if (globalDimValue > 0) {
-            this._monitorSliders.forEach(({monitorIndex}) => {
-                this._onSliderValueChanged(globalDimValue, monitorIndex);
+        // Restore the remembered per-monitor dim levels on the newly detected monitors.
+        if (dimmingEnabled) {
+            this._monitorSliders.forEach(({monitorIndex, slider}) => {
+                this._onSliderValueChanged(slider.value, monitorIndex);
             });
         }
     }
@@ -313,6 +348,8 @@ export default class VividShadeExtension extends Extension {
         destroyOverlays();
         colorEnabled = {};
         globalDimValue = 0.0;
+        dimmingEnabled = true;
+        monitorDimValues = {};
         colorValues = {
             red: 128,
             green: 83,
